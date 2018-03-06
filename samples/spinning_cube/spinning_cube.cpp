@@ -26,7 +26,7 @@
 #include "platform/platform.hpp"
 #include <string.h>
 
-#define ERROR0 0
+#define ERROR0 1
 
 using namespace MaliSDK;
 using namespace std;

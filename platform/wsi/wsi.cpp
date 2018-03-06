@@ -104,13 +104,12 @@ Result WSIPlatform::initialize()
 
 #define NELEMS(x) (sizeof(x) / sizeof((x)[0]))
 static const char *pValidationLayers[] = {
-	"VK_LAYER_GOOGLE_threading",       "VK_LAYER_LUNARG_parameter_validation", "VK_LAYER_LUNARG_object_tracker",
-	"VK_LAYER_LUNARG_core_validation", "VK_LAYER_LUNARG_device_limits",        "VK_LAYER_LUNARG_image",
-	"VK_LAYER_LUNARG_swapchain",       "VK_LAYER_GOOGLE_unique_objects",
+		"VK_LAYER_ARM_mali_perf_doc",
 };
 
 static const char *pMetaLayers[] = {
-	"VK_LAYER_LUNARG_standard_validation",
+		"VK_LAYER_ARM_mali_perf_doc",
+		//"VK_LAYER_LUNARG_standard_validation",
 };
 
 static void addSupportedLayers(vector<const char *> &activeLayers, const vector<VkLayerProperties> &instanceLayers,
@@ -649,7 +648,7 @@ Result WSIPlatform::initSwapchain(const SwapchainDimensions &dim)
 	info.imageExtent.width = swapchainSize.width;
 	info.imageExtent.height = swapchainSize.height;
 	info.imageArrayLayers = 1;
-	info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	info.preTransform = preTransform;
 	info.compositeAlpha = composite;

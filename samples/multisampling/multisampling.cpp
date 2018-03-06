@@ -30,6 +30,11 @@ using namespace MaliSDK;
 using namespace std;
 using namespace glm;
 
+#define ERROR0 1
+#define ERROR1 1
+#define ERROR2 1
+#define ERROR3 1
+
 // This sample extends rotating_texture to add multisampled rendering to it.
 
 struct Backbuffer
@@ -143,6 +148,7 @@ private:
 	uint32_t findMemoryTypeFromRequirementsWithFallback(uint32_t deviceRequirements, uint32_t hostRequirements);
 
 	void initRenderPass(VkFormat format);
+	void initRenderPassSlow(VkFormat format);
 	void termBackbuffers();
 
 	void initPerFrame(unsigned numBackbuffers);
@@ -220,13 +226,21 @@ RenderTarget Multisampling::createMultisampledRenderTarget(unsigned width, unsig
 	info.arrayLayers = 1;
 	// Use 4x MSAA. This is the best performance vs. quality tradeoff on Mali GPUs.
 	// Beyond 4x MSAA, there is less fill-rate. 4x MSAA has same throughput as no multisampling.
+#if ERROR1
+	info.samples = VK_SAMPLE_COUNT_8_BIT;
+#else
 	info.samples = VK_SAMPLE_COUNT_4_BIT;
+#endif
 	info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	info.tiling = VK_IMAGE_TILING_OPTIMAL;
 
 	// This image will only be used as a transient render target.
 	// Its purpose is only to hold the multisampled data before resolving the render pass.
+#if ERROR0
+	info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+#else
 	info.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+#endif
 	info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 	// Create texture.
@@ -393,7 +407,11 @@ Texture Multisampling::createTextureFromAsset(const char *pPath)
 	samplerInfo.maxAnisotropy = 1.0f;
 	samplerInfo.compareEnable = false;
 	samplerInfo.minLod = 0.0f;
+#if ERROR3
 	samplerInfo.maxLod = 0.0f;
+#else
+	samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
+#endif
 
 	VkSampler sampler;
 	VK_CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &sampler));
@@ -464,6 +482,51 @@ Buffer Multisampling::createBuffer(const void *pInitialData, size_t size, VkFlag
 	return buffer;
 }
 
+void Multisampling::initRenderPassSlow(VkFormat format)
+{
+	VkAttachmentDescription attachments[1] = { { 0 } };
+
+	attachments[0].format = format;
+	attachments[0].samples = VK_SAMPLE_COUNT_8_BIT;
+	attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	attachments[0].finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	VkAttachmentReference colorRef = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+	VkSubpassDescription subpass = { 0 };
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+
+	subpass.pColorAttachments = &colorRef;
+
+	VkSubpassDependency dependency[2] = {};
+	dependency[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency[0].dstSubpass = 0;
+	dependency[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency[0].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependency[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+
+	dependency[1].srcSubpass = 0;
+	dependency[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+	dependency[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency[1].dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	dependency[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependency[1].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+	// Finally, create the renderpass.
+	VkRenderPassCreateInfo rpInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
+	rpInfo.attachmentCount = 1;
+	rpInfo.pAttachments = attachments;
+	rpInfo.subpassCount = 1;
+	rpInfo.pSubpasses = &subpass;
+	rpInfo.dependencyCount = 2;
+	rpInfo.pDependencies = dependency;
+	VK_CHECK(vkCreateRenderPass(pContext->getDevice(), &rpInfo, nullptr, &renderPass));
+}
+
 void Multisampling::initRenderPass(VkFormat format)
 {
 	VkAttachmentDescription attachments[2] = { { 0 } };
@@ -471,13 +534,21 @@ void Multisampling::initRenderPass(VkFormat format)
 	// This is the multisampled attachment we will render to.
 	// After resolving the texture, we do not need to preserve it, so use DONT_CARE for storeOp here.
 	attachments[0].format = format;
+#if ERROR1
+	attachments[0].samples = VK_SAMPLE_COUNT_8_BIT;
+#else
 	attachments[0].samples = VK_SAMPLE_COUNT_4_BIT;
+#endif
 	attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 
 	// DONT_CARE is critical here, since it allows tile based renderers to completely avoid
 	// writing out the multisampled framebuffer to memory. This is a huge performance and bandwidth
 	// improvement.
+#if ERROR2
+	attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+#else
 	attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+#endif
 
 	attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -648,7 +719,11 @@ void Multisampling::initPipeline()
 
 	// Render with 4x MSAA.
 	VkPipelineMultisampleStateCreateInfo multisample = { VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
+#if ERROR1
+	multisample.rasterizationSamples = VK_SAMPLE_COUNT_8_BIT;
+#else
 	multisample.rasterizationSamples = VK_SAMPLE_COUNT_4_BIT;
+#endif
 	multisample.sampleShadingEnable = false;
 	multisample.alphaToCoverageEnable = false;
 	multisample.alphaToOneEnable = false;
@@ -804,6 +879,28 @@ void Multisampling::render(unsigned swapchainIndex, float deltaTime)
 	// Complete render pass.
 	vkCmdEndRenderPass(cmd);
 
+#if ERROR0
+	imageMemoryBarrier(cmd, backbuffer.image,
+	                   0, VK_ACCESS_TRANSFER_WRITE_BIT,
+	                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+	                   VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	VkImageResolve region = {};
+	region.extent.width = width;
+	region.extent.height = height;
+	region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+	region.srcSubresource = region.dstSubresource;
+
+	vkCmdResolveImage(cmd, multisampledRenderTarget.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	                  backbuffer.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	                  1, &region);
+
+	imageMemoryBarrier(cmd, backbuffer.image,
+	                   VK_ACCESS_TRANSFER_WRITE_BIT, 0,
+	                   VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+	                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+#endif
+
 	// Complete the command buffer.
 	VK_CHECK(vkEndCommandBuffer(cmd));
 
@@ -939,7 +1036,11 @@ void Multisampling::updateSwapchain(const vector<VkImage> &newBackbuffers, const
 	multisampledRenderTarget = createMultisampledRenderTarget(dim.width, dim.height, dim.format);
 
 	// We can't initialize the renderpass until we know the swapchain format.
+#if ERROR0
+	initRenderPassSlow(dim.format);
+#else
 	initRenderPass(dim.format);
+#endif
 	// We can't initialize the pipeline until we know the render pass.
 	initPipeline();
 
@@ -972,7 +1073,11 @@ void Multisampling::updateSwapchain(const vector<VkImage> &newBackbuffers, const
 		// Build the framebuffer.
 		VkFramebufferCreateInfo fbInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 		fbInfo.renderPass = renderPass;
+#if ERROR0
+		fbInfo.attachmentCount = 1;
+#else
 		fbInfo.attachmentCount = 2;
+#endif
 
 		// As specified in the render pass, the multisampled attachment should be #0,
 		// the actual backbuffer is #1.

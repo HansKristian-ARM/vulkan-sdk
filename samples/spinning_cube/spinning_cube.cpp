@@ -26,6 +26,8 @@
 #include "platform/platform.hpp"
 #include <string.h>
 
+#define ERROR0 0
+
 using namespace MaliSDK;
 using namespace std;
 using namespace glm;
@@ -470,22 +472,51 @@ void SpinningCube::initVertexAndIndexBuffers()
 		vec3(1.0f, 1.0f, 1.0f),    vec3(1.0f, 1.0f, -1.0f),  vec3(1.0f, 1.0f, 1.0f),    vec3(1.0f, -1.0f, 1.0f),
 		vec3(1.0f, 1.0f, 1.0f),    vec3(-1.0f, 1.0f, 1.0f),  vec3(-1.0f, -1.0f, 1.0f),  vec3(-1.0f, -1.0f, 1.0f),
 		vec3(-1.0f, 1.0f, 1.0f),   vec3(-1.0f, 1.0f, -1.0f), vec3(-1.0f, -1.0f, -1.0f), vec3(1.0f, 1.0f, -1.0f),
-		vec3(1.0f, 1.0f, -1.0f),   vec3(1.0f, -1.0f, -1.0f), vec3(1.0f, -1.0f, 1.0f),   vec3(-1.0f, -1.0f, -1.0f)
+		vec3(1.0f, 1.0f, -1.0f),   vec3(1.0f, -1.0f, -1.0f), vec3(1.0f, -1.0f, 1.0f),   vec3(-1.0f, -1.0f, -1.0f),
+#if ERROR0
+		vec3(1.0f, -1.0f, -1.0f),  vec3(1.0f, -1.0f, 1.0f),  vec3(-1.0f, -1.0f, 1.0f),  vec3(1.0f, -1.0f, -1.0f),
+		vec3(-1.0f, -1.0f, -1.0f), vec3(-1.0f, 1.0f, -1.0f), vec3(-1.0f, 1.0f, -1.0f),  vec3(-1.0f, 1.0f, 1.0f),
+		vec3(1.0f, 1.0f, 1.0f),    vec3(1.0f, 1.0f, -1.0f),  vec3(1.0f, 1.0f, 1.0f),    vec3(1.0f, -1.0f, 1.0f),
+		vec3(1.0f, 1.0f, 1.0f),    vec3(-1.0f, 1.0f, 1.0f),  vec3(-1.0f, -1.0f, 1.0f),  vec3(-1.0f, -1.0f, 1.0f),
+		vec3(-1.0f, 1.0f, 1.0f),   vec3(-1.0f, 1.0f, -1.0f), vec3(-1.0f, -1.0f, -1.0f), vec3(1.0f, 1.0f, -1.0f),
+		vec3(1.0f, 1.0f, -1.0f),   vec3(1.0f, -1.0f, -1.0f), vec3(1.0f, -1.0f, 1.0f),   vec3(-1.0f, -1.0f, -1.0f),
+#endif
 	};
 
 	positionBuffer = createBuffer(positionData, sizeof(positionData), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
-	static const vec2 texcData[] = { vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 0.0f), vec2(0.0f, 0.0f),
-		                             vec2(0.0f, 1.0f), vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 0.0f),
-		                             vec2(0.0f, 1.0f), vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 0.0f),
-		                             vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 0.0f), vec2(0.0f, 1.0f),
-		                             vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 1.0f), vec2(1.0f, 0.0f),
-		                             vec2(1.0f, 1.0f), vec2(0.0f, 1.0f), vec2(0.0f, 1.0f), vec2(0.0f, 0.0f) };
+	static const vec2 texcData[] = {
+			vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 0.0f), vec2(0.0f, 0.0f),
+			vec2(0.0f, 1.0f), vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 0.0f),
+			vec2(0.0f, 1.0f), vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 0.0f),
+			vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 0.0f), vec2(0.0f, 1.0f),
+			vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 1.0f), vec2(1.0f, 0.0f),
+			vec2(1.0f, 1.0f), vec2(0.0f, 1.0f), vec2(0.0f, 1.0f), vec2(0.0f, 0.0f),
+#if ERROR0
+			vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 0.0f), vec2(0.0f, 0.0f),
+			vec2(0.0f, 1.0f), vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 0.0f),
+			vec2(0.0f, 1.0f), vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 0.0f),
+			vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 0.0f), vec2(0.0f, 1.0f),
+			vec2(1.0f, 1.0f), vec2(1.0f, 0.0f), vec2(0.0f, 1.0f), vec2(1.0f, 0.0f),
+			vec2(1.0f, 1.0f), vec2(0.0f, 1.0f), vec2(0.0f, 1.0f), vec2(0.0f, 0.0f),
+#endif
+	};
 
 	texCoordsBuffer = createBuffer(texcData, sizeof(texcData), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
-	static const uint16_t indexData[] = { 0, 1,  2,  18, 0, 2,  3,  4,  5,  19, 3,  5,  6,  7,  8,  20, 6,  8,
-		                                  9, 10, 11, 21, 9, 11, 12, 13, 14, 22, 12, 14, 15, 16, 17, 23, 15, 17 };
+	static const uint16_t indexData[] = {
+			0, 1,  2,  18, 0, 2,  3,  4,  5,  19, 3,  5,  6,  7,  8,  20, 6,  8,
+#if ERROR0
+			9 + 24, 10 + 24, 11 + 24,
+			21 + 24, 9 + 24, 11 + 24,
+			12 + 24, 13 + 24, 14 + 24,
+			22 + 24, 12 + 24, 14 + 24,
+			15 + 24, 16 + 24, 17 + 24,
+			23 + 24, 15 + 24, 17 + 24,
+#else
+			9, 10, 11, 21, 9, 11, 12, 13, 14, 22, 12, 14, 15, 16, 17, 23, 15, 17,
+#endif
+	};
 	indexBuffer = createBuffer(indexData, sizeof(indexData), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 }
 
